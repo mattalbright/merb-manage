@@ -7,7 +7,7 @@
 # Can be used as a startup script to ensure Merb apps fire back up after a reboot (such as within /etc/init.d)
 #
 PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local:/usr/local/sbin:/usr/local/bin
-MERB_MANAGE_CONF_DIR=/etc/merb-manage
+MERB_MANAGE_CONF_DIR=/etc/merb_manage
 
 # Default return value
 RETVAL=0

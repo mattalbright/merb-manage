@@ -7,7 +7,7 @@
 require "yaml"
 
 # Default config directory
-configuration_directory = "/etc/merb-manage"
+configuration_directory = "/etc/merb_manage"
 
 # This iterates through each config found in the configuration directory, executing the specified block for each
 def each_config(config, &block)
@@ -30,22 +30,53 @@ end
 
 # This starts the server as per the specified yml config
 def start(yml)
-  command = "merb -m #{yml['path']} "
-  command += "-u #{yml['user']} " unless yml["user"].nil?
-  command += "-G #{yml['group']} " unless yml["group"].nil?
-  command += "-a #{yml['adapter']} " unless yml["adapter"].nil?
-  command += "-e #{yml['environment']} " unless yml["environment"].nil?
-  command += "-c #{yml['servers']} " unless yml["servers"].nil?
-  command += "-d " if yml["servers"].nil?
-  command += "-p #{yml['port']} " unless yml["port"].nil?
-  command += "-l #{yml['logging']} " unless yml["logging"].nil?
-  command = "su #{yml['user']} -c \"#{command}\"" unless yml["user"].nil?
+  command = build_command(yml)
+  command += "-d " if yml['servers'].nil?
+  command += build_command_line_options(yml, 
+    %w'user group adapter environment servers port pid_file log_file logging mutex')
   `#{command}`
 end
 
 # This stops the server as per the specified yml config
 def stop(yml)
-  `merb -m #{yml["path"]} -k all`
+  command = build_command(yml)
+  command += build_command_line_options(yml, %w'servers pid_file')
+  `#{command} -K all && #{command} -k all`
+end
+
+def build_command(yml)
+  command = "merb"
+  command = "cd #{yml['path']} && #{yml['executable']}" unless yml['executable'].nil?
+  command += " -m #{yml['path']}"
+  command
+end
+
+def build_command_line_options(yml, config_items)
+  config_items.map {|c| build_command_line_option(yml, c)}.join
+end
+
+def build_command_line_option(yml, config_item)
+  if yml[config_item].nil?
+    ""
+  else
+    " #{command_line_option_for(config_item)} #{yml[config_item]}"
+  end
+end
+
+def command_line_option_for(yml_string)
+  {
+    'adapter' => '-a',
+    'environment' => '-e',
+    'group' => '-G',
+    'log_file' => '-L',
+    'logging' => '-l',
+    'mutex' => '-X',
+    'path' => '-m',
+    'pid_file' => '-P',
+    'port' => '-p',
+    'servers' => '-c',
+    'user' => '-u',
+  }[yml_string]
 end
 
 # See if there is a -c argument
