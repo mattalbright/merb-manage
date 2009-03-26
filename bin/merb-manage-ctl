@@ -41,7 +41,31 @@ end
 def stop(yml)
   command = build_command(yml)
   command += build_command_line_options(yml, %w'servers pid_file')
-  `#{command} -K all && #{command} -k all`
+  `#{command} -K all`
+  sleep 2
+  
+  5.times do |i|
+    pids = pids_remaining(yml)
+    return if pids.length == 0
+    pids.each { |pid| `kill -TERM #{pid}` }
+    sleep 2
+  end
+rescue Exception => e
+  puts e.message + "\n" + e.backtrace.join("\n")
+end
+
+def pids_remaining(yml)
+  pids = []
+  start_port = yml['port'].to_i
+  ports = (start_port...(start_port + yml['servers'])).to_a
+  ports.each do |p|
+    pid_file = sprintf yml['pid_file'], p
+    if File.exist?(pid_file)
+      pid = File.open(pid_file, 'r') { |f| f.readline.chomp }
+      pids << pid
+    end
+  end
+  pids
 end
 
 def build_command(yml)
